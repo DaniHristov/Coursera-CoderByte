@@ -1,12 +1,11 @@
 ﻿namespace Coursera_CoderByte
 {
+    using Microsoft.EntityFrameworkCore;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
-
-    using Microsoft.EntityFrameworkCore;
 
     class Program
     {
@@ -35,6 +34,15 @@
 
             stringBuilder.Append("<table>");
             stringBuilder.Append("<tr><th>Student</th><th>Total Credit</th></tr>");
+
+            ReportParser(studentPin, startDate, endDate, minCredits, students, courses, stringBuilder);
+
+            stringBuilder.Append("</table>");
+            File.WriteAllText(@"d:\test.html", stringBuilder.ToString());
+        }
+
+        private static void ReportParser(List<string> studentPin, DateTime startDate, DateTime endDate, int minCredits, StudentsService students, CoursesService courses, StringBuilder stringBuilder)
+        {
             foreach (var pin in studentPin)
             {
                 int credits = students.GetTotalCreditsByIdInPeriodOftime(pin, startDate, endDate);
@@ -53,14 +61,9 @@
                     {
                         stringBuilder.Append($"<tr><td></td><td>{course.Name}</td><td>{course.Time}</td><td>{course.Credit}</td><td>{course.InstructorName}</td></tr>");
                     }
-
                 }
             }
-            stringBuilder.Append("</table>");
-            File.WriteAllText(@"d:\test.html", stringBuilder.ToString());
-
         }
-
         private static DateTime DateParser(string[] dateSplit)
         {
             var year = int.Parse(dateSplit[0]);
@@ -70,6 +73,13 @@
             var date = new DateTime(year, month, day);
             return date;
         }
+    }
+
+    public interface ICoursesService
+    {
+        List<string> GetByStudentPin(string pin);
+
+        List<CourseViewModel> GetByStudentPinInPeriodOfTime(string pin, DateTime startDate, DateTime endDate);
     }
 
     public class CoursesService : ICoursesService
@@ -120,15 +130,6 @@
         }
     }
 
-    public interface ICoursesService
-    {
-        List<string> GetByStudentPin(string pin);
-
-        List<CourseViewModel> GetByStudentPinInPeriodOfTime(string pin, DateTime startDate, DateTime endDate);
-
-
-    }
-    
     public class CourseViewModel
     {
         public string Name { get; set; }
@@ -165,7 +166,7 @@
                 LastName = x.LastName
             }).FirstOrDefault();
 
-        public int GetTotalCreditsByIdAsync(string pin) 
+        public int GetTotalCreditsByIdAsync(string pin)
             => this.context.StudentsCoursesXrefs
                 .Where(x => x.StudentPin == pin)
                 .Sum(x => x.Course.Credit);
@@ -173,7 +174,7 @@
         public int GetTotalCreditsByIdInPeriodOftime(string pin, DateTime startDate, DateTime endDate)
         {
             return this.context.StudentsCoursesXrefs
-                .Where(x => x.StudentPin == pin 
+                .Where(x => x.StudentPin == pin
                      && x.CompletionDate >= startDate
                      && x.CompletionDate <= endDate)
                 .Sum(x => x.Course.Credit);
